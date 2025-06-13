@@ -12,6 +12,8 @@ import { SessionApiService } from '../../services/session-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { DetailComponent } from './detail.component';
+import {MatIconModule} from "@angular/material/icon";
+import {MatCardModule} from "@angular/material/card";
 
 describe('DetailComponent', () => {
   let component: DetailComponent;
@@ -63,6 +65,8 @@ describe('DetailComponent', () => {
         HttpClientModule,
         MatSnackBarModule,
         ReactiveFormsModule,
+        MatCardModule,
+        MatIconModule,
       ],
       declarations: [DetailComponent],
       providers: [
