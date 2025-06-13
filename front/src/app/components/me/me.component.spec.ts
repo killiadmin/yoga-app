@@ -11,15 +11,16 @@ import { of } from 'rxjs';
 import { SessionService } from 'src/app/services/session.service';
 import { UserService } from 'src/app/services/user.service';
 import { User } from '../../interfaces/user.interface';
+import { SessionInformation } from 'src/app/interfaces/sessionInformation.interface';
 
 import { MeComponent } from './me.component';
 
 describe('MeComponent', () => {
   let component: MeComponent;
   let fixture: ComponentFixture<MeComponent>;
-  let mockUserService: jest.Mocked<UserService>;
-  let mockRouter: jest.Mocked<Router>;
-  let mockMatSnackBar: jest.Mocked<MatSnackBar>;
+  let mockUserService: Partial<UserService>;
+  let mockRouter: Partial<Router>;
+  let mockMatSnackBar: Partial<MatSnackBar>;
 
   const mockUser: User = {
     id: 1,
@@ -32,27 +33,34 @@ describe('MeComponent', () => {
     updatedAt: new Date(),
   };
 
-  const mockSessionService = {
-    sessionInformation: {
-      admin: true,
-      id: 1
-    },
+  const mockSessionInformation: SessionInformation = {
+    token: 'mock-token',
+    type: 'Bearer',
+    id: 1,
+    username: 'test@yoga.fr',
+    firstName: 'Test',
+    lastName: 'User',
+    admin: true
+  };
+
+  const mockSessionService: Partial<SessionService> = {
+    sessionInformation: mockSessionInformation,
     logOut: jest.fn(),
   };
 
   beforeEach(async () => {
     mockUserService = {
-      getById: jest.fn(),
-      delete: jest.fn()
-    } as any;
+      getById: jest.fn().mockReturnValue(of(mockUser)),
+      delete: jest.fn().mockReturnValue(of({}))
+    };
 
     mockRouter = {
       navigate: jest.fn()
-    } as any;
+    };
 
     mockMatSnackBar = {
       open: jest.fn()
-    } as any;
+    };
 
     jest.spyOn(window.history, 'back').mockImplementation(() => {});
 
@@ -84,8 +92,6 @@ describe('MeComponent', () => {
   });
 
   it('should load user data on ngOnInit', () => {
-    mockUserService.getById.mockReturnValue(of(mockUser));
-
     component.ngOnInit();
 
     expect(mockUserService.getById).toHaveBeenCalledWith('1');
@@ -99,8 +105,6 @@ describe('MeComponent', () => {
   });
 
   it('should delete user account successfully', () => {
-    mockUserService.delete.mockReturnValue(of({}));
-
     component.delete();
 
     expect(mockUserService.delete).toHaveBeenCalledWith('1');
