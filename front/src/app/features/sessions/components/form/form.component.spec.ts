@@ -61,27 +61,15 @@ describe('FormComponent', () => {
     { id: 2, firstName: 'Test2', lastName: 'User2' },
   ];
 
-  const mockParamMap: ParamMap = {
-    get: jest.fn().mockReturnValue('1'),
-    has: jest.fn().mockReturnValue(true),
-    getAll: jest.fn().mockReturnValue(['1']),
-    keys: ['id'],
-  };
-
-  const mockActivatedRouteSnapshot: Partial<ActivatedRouteSnapshot> = {
-    paramMap: mockParamMap,
-    params: { id: '1' },
-  };
-
   beforeEach(async () => {
     mockSessionService = {
       sessionInformation: mockSessionInformation,
     };
 
     mockSessionApiService = {
-      detail: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      detail: jest.fn().mockReturnValue(of(mockSession)),
+      create: jest.fn().mockReturnValue(of(mockSession)),
+      update: jest.fn().mockReturnValue(of(mockSession)),
     };
 
     mockTeacherService = {
@@ -97,8 +85,17 @@ describe('FormComponent', () => {
       url: '/sessions/create',
     };
 
+    const mockParamMap: ParamMap = {
+      get: jest.fn().mockReturnValue('1'),
+      has: jest.fn().mockReturnValue(true),
+      getAll: jest.fn().mockReturnValue(['1']),
+      keys: ['id'],
+    };
+
     mockActivatedRoute = {
-      snapshot: mockActivatedRouteSnapshot as ActivatedRouteSnapshot,
+      snapshot: {
+        paramMap: mockParamMap,
+      } as ActivatedRouteSnapshot,
     };
 
     await TestBed.configureTestingModule({
@@ -134,7 +131,15 @@ describe('FormComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize form for create session', () => {
+  it('should redirect non-admin users to sessions', () => {
+    mockSessionService.sessionInformation!.admin = false;
+
+    component.ngOnInit();
+
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/sessions']);
+  });
+
+  it('should handle complete workflow: ngOnInit for create mode and submit new session', () => {
     mockRouter.url = '/sessions/create';
 
     component.ngOnInit();
@@ -142,49 +147,52 @@ describe('FormComponent', () => {
     expect(component.onUpdate).toBeFalsy();
     expect(component.sessionForm).toBeDefined();
     expect(component.sessionForm?.get('name')?.value).toBe('');
-  });
+    expect(component.teachers$).toBeDefined();
 
-  it('should create new session successfully', () => {
-    component.ngOnInit();
-    component.onUpdate = false;
-
-    const formValue = {
+    component.sessionForm?.patchValue({
       name: 'New Session',
       date: '2025-06-01',
       teacher_id: 1,
       description: 'New description',
-    };
-
-    component.sessionForm?.patchValue(formValue);
-    (mockSessionApiService.create as jest.Mock).mockReturnValue(of(mockSession));
+    });
 
     component.submit();
 
-    expect(mockSessionApiService.create).toHaveBeenCalledWith(formValue);
+    expect(mockSessionApiService.create).toHaveBeenCalledWith({
+      name: 'New Session',
+      date: '2025-06-01',
+      teacher_id: 1,
+      description: 'New description',
+    });
     expect(mockMatSnackBar.open).toHaveBeenCalledWith('Session created !', 'Close', { duration: 3000 });
     expect(mockRouter.navigate).toHaveBeenCalledWith(['sessions']);
   });
 
-  it('should have valid form when all fields are filled correctly', () => {
+  it('should handle update workflow: ngOnInit for update mode and submit updated session', () => {
+    mockRouter.url = '/sessions/update/1';
+
     component.ngOnInit();
 
+    expect(component.onUpdate).toBeTruthy();
+    expect(mockSessionApiService.detail).toHaveBeenCalledWith('1');
+
+    component.onUpdate = true;
     component.sessionForm?.patchValue({
-      name: 'Valid Session',
+      name: 'Updated Session',
       date: '2025-06-01',
       teacher_id: 1,
-      description: 'Valid description',
+      description: 'Updated description',
     });
 
-    expect(component.sessionForm?.valid).toBeTruthy();
-  });
+    component.submit();
 
-  it('should initialize teachers observable', () => {
-    expect(component.teachers$).toBeDefined();
-
-    component.teachers$.subscribe(teachers => {
-      expect(teachers).toEqual(mockTeachers);
+    expect(mockSessionApiService.update).toHaveBeenCalledWith('1', {
+      name: 'Updated Session',
+      date: '2025-06-01',
+      teacher_id: 1,
+      description: 'Updated description',
     });
-
-    expect(mockTeacherService.all).toHaveBeenCalled();
+    expect(mockMatSnackBar.open).toHaveBeenCalledWith('Session updated !', 'Close', { duration: 3000 });
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['sessions']);
   });
 });
