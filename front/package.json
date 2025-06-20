@@ -5,10 +5,12 @@
     "start": "ng serve",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage" : "npm run test -- --coverage && open coverage/jest/lcov-report/index.html",
     "lint": "ng lint",
     "e2e": "ng e2e",
     "e2e:ci": "ng run yoga:e2e-ci",
     "e2e:coverage": "npx nyc report --reporter=lcov --reporter=text-summary",
+    "e2e:run": "npm run cypress:run && npm run e2e:coverage && open coverage/lcov-report/index.html",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
