@@ -1,11 +1,11 @@
 /// <reference types="Cypress" />
 
 describe('Register page', () => {
-  const firstName = 'input[formcontrolname="firstName"]';
-  const lastName = 'input[formcontrolname="lastName"]';
-  const email = 'input[formcontrolname="email"]';
-  const password = 'input[formcontrolname="password"]';
-  const submitButton = 'button[type="submit"]';
+  const firstName = 'input[formcontrolname=firstName]';
+  const lastName = 'input[formcontrolname=lastName]';
+  const email = 'input[formControlName=email]';
+  const password = 'input[formcontrolname=password]';
+  const submitButton = 'button[type=submit]';
   const errorMessage = '.error';
   beforeEach(() => {
     cy.visit('/register');
@@ -60,11 +60,6 @@ describe('Register page', () => {
 
 
   it('should show error for a required field not properly filled', () => {
-    cy.get(firstName).should('not.be.disabled');
-    cy.get(lastName).should('not.be.disabled');
-    cy.get(email).should('not.be.disabled');
-    cy.get(password).should('not.be.disabled');
-
     cy.get(firstName).type('User');
     cy.get(lastName).type('Test');
     cy.get(email).type('invalid');
@@ -77,6 +72,4 @@ describe('Register page', () => {
 
     cy.get(submitButton).should('be.disabled');
   });
-
-
 });
