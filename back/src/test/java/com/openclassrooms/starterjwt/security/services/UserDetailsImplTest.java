@@ -94,7 +94,7 @@ public class UserDetailsImplTest {
      * @see UserDetailsImpl#equals(Object)
      */
     @Test
-    void testEquals_sameId_shouldBeEqual() {
+    void testEqualsSameIdShouldBeEqual() {
         UserDetailsImpl user1 = UserDetailsImpl.builder().id(1L).build();
         UserDetailsImpl user2 = UserDetailsImpl.builder().id(1L).build();
         assertEquals(user1, user2);
@@ -104,7 +104,7 @@ public class UserDetailsImplTest {
      * Verifies that two UserDetailsImpl objects with different IDs are not equal
      */
     @Test
-    void testEquals_differentId_shouldNotBeEqual() {
+    void testEqualsDifferentIdShouldNotBeEqual() {
         UserDetailsImpl user1 = UserDetailsImpl.builder().id(1L).build();
         UserDetailsImpl user2 = UserDetailsImpl.builder().id(2L).build();
         assertNotEquals(user1, user2);
@@ -114,7 +114,7 @@ public class UserDetailsImplTest {
      * Tests that a UserDetailsImpl object is not equal to an object of a different class
      */
     @Test
-    void testEquals_differentClass_shouldNotBeEqual() {
+    void testEqualsDifferentClassShouldNotBeEqual() {
         UserDetailsImpl user = UserDetailsImpl.builder().id(1L).build();
         assertNotEquals(user, new Object());
     }
