@@ -111,6 +111,15 @@ public class UserDetailsImplTest {
     }
 
     /**
+     * Tests that they equals method of UserDetailsImpl returns true when comparing two instances with the same state
+     */
+    @Test
+    void testEqualsSameInstanceShouldReturnTrue() {
+        UserDetailsImpl user = UserDetailsImpl.builder().id(1L).build();
+        assertEquals(user, user);
+    }
+
+    /**
      * Tests that a UserDetailsImpl object is not equal to an object of a different class
      */
     @Test
