@@ -21,10 +21,10 @@ import com.openclassrooms.starterjwt.security.services.UserDetailsServiceImpl;
 
 public class AuthTokenFilter extends OncePerRequestFilter {
   @Autowired
-  private JwtUtils jwtUtils;
+  JwtUtils jwtUtils;
 
   @Autowired
-  private UserDetailsServiceImpl userDetailsService;
+  UserDetailsServiceImpl userDetailsService;
 
   private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
