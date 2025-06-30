@@ -6,7 +6,7 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 Git clone:
 
-> git clone https://github.com/OpenClassrooms-Student-Center/P5-Full-Stack-testing
+> git clone https://github.com/killiadmin/yoga-app.git
 
 Go inside folder:
 
@@ -55,7 +55,7 @@ Launching e2e test:
 
 Generate coverage report (you should launch e2e test before):
 
-> npm run e2e:coverage
+> npm run e2e:run
 
 Report is available here:
 
