@@ -6,62 +6,95 @@ import com.openclassrooms.starterjwt.models.Session;
 import com.openclassrooms.starterjwt.models.Teacher;
 import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.repository.SessionRepository;
+import com.openclassrooms.starterjwt.repository.TeacherRepository;
 import com.openclassrooms.starterjwt.repository.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for the SessionServiceTest class
+ * Integration tests for the SessionService class
  */
-@ExtendWith(MockitoExtension.class)
-public class SessionServiceTest {
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+class SessionServiceTest {
 
-    @Mock
+    @Autowired
     private SessionRepository sessionRepository;
 
-    @Mock
+    @Autowired
     private UserRepository userRepository;
 
-    @InjectMocks
+    @Autowired
+    private TeacherRepository teacherRepository;
+
+    @Autowired
     private SessionService sessionService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private Session session;
     private User user;
+    private Teacher teacher;
 
     /**
      * Initializes the necessary objects for each test
      */
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setId(1L);
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM participate").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM sessions").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM teachers").executeUpdate();
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+        entityManager.flush();
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // Create and save teacher
+        teacher = new Teacher();
+        teacher.setFirstName("Test");
+        teacher.setLastName("Teacher");
+        teacher.setCreatedAt(now);
+        teacher.setUpdatedAt(now);
+        teacher = teacherRepository.save(teacher);
+
+        // Create and save user
+        user = new User();
+        user.setEmail("test@example.com");
+        user.setFirstName("Test");
+        user.setLastName("User");
+        user.setPassword("password");
+        user.setAdmin(false);
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        user = userRepository.save(user);
+
+        // Create session
         session = new Session();
-        session.setId(1L);
-        session.setUsers(new ArrayList<>());
-        session.setDate(new Date());
         session.setName("Test Session");
-        session.setTeacher(
-                new Teacher(
-                        1L,
-                        "Teacher",
-                        "Test",
-                        LocalDateTime.now(),
-                        LocalDateTime.now()
-                )
-        );
+        session.setDate(new Date());
+        session.setDescription("Test Description");
+        session.setTeacher(teacher);
+        session.setUsers(new ArrayList<>());
+        session.setCreatedAt(now);
+        session.setUpdatedAt(now);
     }
 
     /**
@@ -69,10 +102,13 @@ public class SessionServiceTest {
      */
     @Test
     void testCreateSession() {
-        when(sessionRepository.save(session)).thenReturn(session);
         Session created = sessionService.create(session);
-        assertEquals(session, created);
-        verify(sessionRepository).save(session);
+
+        assertNotNull(created);
+        assertNotNull(created.getId());
+        assertEquals(session.getName(), created.getName());
+        assertEquals(session.getDescription(), created.getDescription());
+        assertEquals(session.getTeacher().getId(), created.getTeacher().getId());
     }
 
     /**
@@ -80,8 +116,12 @@ public class SessionServiceTest {
      */
     @Test
     void testDeleteSession() {
-        sessionService.delete(1L);
-        verify(sessionRepository).deleteById(1L);
+        Session savedSession = sessionRepository.save(session);
+
+        sessionService.delete(savedSession.getId());
+
+        Optional<Session> found = sessionRepository.findById(savedSession.getId());
+        assertFalse(found.isPresent());
     }
 
     /**
@@ -89,9 +129,12 @@ public class SessionServiceTest {
      */
     @Test
     void testFindAllSessions() {
-        when(sessionRepository.findAll()).thenReturn(List.of(session));
+        sessionRepository.save(session);
+
         List<Session> sessions = sessionService.findAll();
+
         assertEquals(1, sessions.size());
+        assertEquals(session.getName(), sessions.get(0).getName());
     }
 
     /**
@@ -99,9 +142,13 @@ public class SessionServiceTest {
      */
     @Test
     void testGetByIdFound() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
-        Session found = sessionService.getById(1L);
+        Session savedSession = sessionRepository.save(session);
+
+        Session found = sessionService.getById(savedSession.getId());
+
         assertNotNull(found);
+        assertEquals(savedSession.getId(), found.getId());
+        assertEquals(savedSession.getName(), found.getName());
     }
 
     /**
@@ -109,8 +156,8 @@ public class SessionServiceTest {
      */
     @Test
     void testGetByIdNotFound() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.empty());
-        Session found = sessionService.getById(1L);
+        Session found = sessionService.getById(999L);
+
         assertNull(found);
     }
 
@@ -119,14 +166,20 @@ public class SessionServiceTest {
      */
     @Test
     void testUpdateSession() {
+        Session savedSession = sessionRepository.save(session);
+
         Session updated = new Session();
         updated.setName("Updated Name");
+        updated.setDescription("Updated Description");
+        updated.setDate(new Date());
+        updated.setTeacher(teacher);
+        updated.setUsers(new ArrayList<>());
 
-        when(sessionRepository.save(any(Session.class))).thenReturn(updated);
+        Session result = sessionService.update(savedSession.getId(), updated);
 
-        Session result = sessionService.update(1L, updated);
         assertEquals("Updated Name", result.getName());
-        assertEquals(1L, result.getId());
+        assertEquals("Updated Description", result.getDescription());
+        assertEquals(savedSession.getId(), result.getId());
     }
 
     /**
@@ -137,12 +190,13 @@ public class SessionServiceTest {
      */
     @Test
     void testParticipateOk() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        Session savedSession = sessionRepository.save(session);
 
-        sessionService.participate(1L, 1L);
-        assertTrue(session.getUsers().contains(user));
+        sessionService.participate(savedSession.getId(), user.getId());
+
+        Session updatedSession = sessionRepository.findById(savedSession.getId()).orElse(null);
+        assertNotNull(updatedSession);
+        assertTrue(updatedSession.getUsers().contains(user));
     }
 
     /**
@@ -151,10 +205,10 @@ public class SessionServiceTest {
     @Test
     void testParticipateAlreadyParticipatingThrows() {
         session.getUsers().add(user);
-        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Session savedSession = sessionRepository.save(session);
 
-        assertThrows(BadRequestException.class, () -> sessionService.participate(1L, 1L));
+        assertThrows(BadRequestException.class, () ->
+                sessionService.participate(savedSession.getId(), user.getId()));
     }
 
     /**
@@ -164,9 +218,8 @@ public class SessionServiceTest {
      */
     @Test
     void testParticipateSessionOrUserNotFoundThrows() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> sessionService.participate(1L, 1L));
+        assertThrows(NotFoundException.class, () ->
+                sessionService.participate(999L, user.getId()));
     }
 
     /**
@@ -177,10 +230,13 @@ public class SessionServiceTest {
     @Test
     void testNoLongerParticipateOk() {
         session.getUsers().add(user);
-        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        Session savedSession = sessionRepository.save(session);
 
-        sessionService.noLongerParticipate(1L, 1L);
-        assertFalse(session.getUsers().contains(user));
+        sessionService.noLongerParticipate(savedSession.getId(), user.getId());
+
+        Session updatedSession = sessionRepository.findById(savedSession.getId()).orElse(null);
+        assertNotNull(updatedSession);
+        assertFalse(updatedSession.getUsers().contains(user));
     }
 
     /**
@@ -189,9 +245,10 @@ public class SessionServiceTest {
      */
     @Test
     void testNoLongerParticipateNotParticipatingThrows() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        Session savedSession = sessionRepository.save(session);
 
-        assertThrows(BadRequestException.class, () -> sessionService.noLongerParticipate(1L, 1L));
+        assertThrows(BadRequestException.class, () ->
+                sessionService.noLongerParticipate(savedSession.getId(), user.getId()));
     }
 
     /**
@@ -199,8 +256,7 @@ public class SessionServiceTest {
      */
     @Test
     void testNoLongerParticipateSessionNotFoundThrows() {
-        when(sessionRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> sessionService.noLongerParticipate(1L, 1L));
+        assertThrows(NotFoundException.class, () ->
+                sessionService.noLongerParticipate(999L, user.getId()));
     }
 }

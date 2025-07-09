@@ -6,28 +6,46 @@ import com.openclassrooms.starterjwt.repository.TeacherRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.mockito.Mockito.*;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the TeacherService class
+ * Integration tests for the TeacherService class
  */
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 class TeacherServiceTest {
 
+    @Autowired
     private TeacherRepository teacherRepository;
+
+    @Autowired
     private TeacherService teacherService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     /**
-     * Sets up the test by creating a mock of the TeacherRepository
+     * Sets up the test data before each test
      */
     @BeforeEach
     void setUp() {
-        teacherRepository = mock(TeacherRepository.class);
-        teacherService = new TeacherService(teacherRepository);
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM sessions").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM teachers").executeUpdate();
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+        entityManager.flush();
     }
 
     /**
@@ -37,15 +55,22 @@ class TeacherServiceTest {
     @Test
     void testFindAll_ReturnsListOfTeachers() {
         // Arrange
+        LocalDateTime now = LocalDateTime.now();
+
         Teacher teacher1 = new Teacher();
-        teacher1.setId(1L);
         teacher1.setLastName("Teacher1");
+        teacher1.setFirstName("First1");
+        teacher1.setCreatedAt(now);
+        teacher1.setUpdatedAt(now);
 
         Teacher teacher2 = new Teacher();
-        teacher2.setId(2L);
         teacher2.setLastName("Teacher2");
+        teacher2.setFirstName("First2");
+        teacher2.setCreatedAt(now);
+        teacher2.setUpdatedAt(now);
 
-        when(teacherRepository.findAll()).thenReturn(Arrays.asList(teacher1, teacher2));
+        teacherRepository.save(teacher1);
+        teacherRepository.save(teacher2);
 
         // Act
         List<Teacher> result = teacherService.findAll();
@@ -61,14 +86,18 @@ class TeacherServiceTest {
     @Test
     void testFindById_ReturnsTeacher_WhenFound() {
         // Arrange
-        Teacher teacher = new Teacher();
-        teacher.setId(1L);
-        teacher.setLastName("Teacher1");
+        LocalDateTime now = LocalDateTime.now();
 
-        when(teacherRepository.findById(1L)).thenReturn(Optional.of(teacher));
+        Teacher teacher = new Teacher();
+        teacher.setLastName("Teacher1");
+        teacher.setFirstName("First1");
+        teacher.setCreatedAt(now);
+        teacher.setUpdatedAt(now);
+
+        Teacher savedTeacher = teacherRepository.save(teacher);
 
         // Act
-        Teacher result = teacherService.findById(1L);
+        Teacher result = teacherService.findById(savedTeacher.getId());
 
         // Assert
         assertNotNull(result);
@@ -77,14 +106,12 @@ class TeacherServiceTest {
 
     /**
      * Tests the behavior of the {@code TeacherService#findById} method when a teacher is not found.
-     * The method should return null in this case.*/
+     * The method should return null in this case.
+     */
     @Test
     void testFindById_ReturnsNull_WhenNotFound() {
-        // Arrange
-        when(teacherRepository.findById(99L)).thenReturn(Optional.empty());
-
         // Act
-        Teacher result = teacherService.findById(99L);
+        Teacher result = teacherService.findById(999L);
 
         // Assert
         assertNull(result);

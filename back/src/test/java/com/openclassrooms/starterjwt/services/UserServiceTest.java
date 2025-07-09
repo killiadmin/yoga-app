@@ -5,30 +5,30 @@ import com.openclassrooms.starterjwt.repository.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for the UserService class
+ * Integration tests for the UserService class
  */
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 class UserServiceTest {
 
     private static final Long USER_ID = 1L;
 
-    @Mock
+    @Autowired
     private UserRepository userRepository;
 
-    @InjectMocks
+    @Autowired
     private UserService userService;
 
     private User user;
@@ -48,40 +48,48 @@ class UserServiceTest {
         user.setUpdatedAt(LocalDateTime.now());
     }
 
+    /**
+     * Tests the behavior of the findById method in the UserService class when an existing user ID is provided.
+     */
     @Test
-    void findById_existingUser_shouldReturnUser() {
+    void findByIdExistingUserShouldReturnUser() {
         // Arrange
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        User savedUser = userRepository.save(user);
 
         // Act
-        User foundUser = userService.findById(USER_ID);
+        User foundUser = userService.findById(savedUser.getId());
 
         // Assert
         assertNotNull(foundUser);
         assertEquals("admin@yoga.fr", foundUser.getEmail());
         assertEquals("Test", foundUser.getLastName());
-        verify(userRepository, times(1)).findById(USER_ID);
     }
 
+    /**
+     * Tests the behavior of the {@code findById} method in the {@code UserService} class
+     * when a non-existing user ID is provided.
+     */
     @Test
-    void findById_nonExistingUser_shouldReturnNull() {
-        // Arrange
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
-
+    void findByIdNonExistingUserShouldReturnNull() {
         // Act
-        User foundUser = userService.findById(USER_ID);
+        User foundUser = userService.findById(999L);
 
         // Assert
         assertNull(foundUser);
-        verify(userRepository, times(1)).findById(USER_ID);
     }
 
+    /**
+     * Tests the behavior of the {@code delete} method in the {@code UserService} class.
+     */
     @Test
-    void deleteUser_shouldInvokeRepositoryDeleteById() {
+    void deleteUserShouldInvokeRepositoryDeleteById() {
+        // Arrange
+        User savedUser = userRepository.save(user);
+
         // Act
-        userService.delete(USER_ID);
+        userService.delete(savedUser.getId());
 
         // Assert
-        verify(userRepository, times(1)).deleteById(USER_ID);
+        assertFalse(userRepository.existsById(savedUser.getId()));
     }
 }

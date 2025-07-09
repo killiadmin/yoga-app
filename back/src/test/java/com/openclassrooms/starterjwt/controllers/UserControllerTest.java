@@ -44,6 +44,10 @@ public class UserControllerTest {
     private static final String EXISTING_EMAIL = "user1@yoga.fr";
     private static final String OTHER_EMAIL = "user2@yoga.fr";
 
+    /**
+     * Sets up the test environment by initializing necessary objects and configurations
+     * that are required for executing unit tests for the UserController.
+     */
     @BeforeEach
     void setUp() {
         LocalDateTime now = LocalDateTime.now();
@@ -76,8 +80,11 @@ public class UserControllerTest {
         when(authentication.getPrincipal()).thenReturn(userDetails);
     }
 
-    // Testing get methods
-
+    /**
+     * Tests the behavior of the UserController when retrieving a user by a valid ID.
+     *
+     * @throws Exception if an error occurs during the test execution
+     */
     @Test
     void findById_withValidId_shouldReturnOk() throws Exception {
         // Arrange
@@ -91,6 +98,11 @@ public class UserControllerTest {
         verify(userService, times(1)).findById(1L);
     }
 
+    /**
+     * Tests the behavior of the UserController when attempting to retrieve a user by an unknown ID.
+     *
+     * @throws Exception if an error occurs during the test execution
+     */
     @Test
     void findById_withUnknownId_shouldReturnNotFound() throws Exception {
         // Arrange
@@ -101,8 +113,11 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // Testing delete methods
-
+    /**
+     * Tests the behavior of the UserController when attempting to delete a user with an authorized user.
+     *
+     * @throws Exception if any error occurs during the test execution
+     */
     @Test
     void deleteUser_withAuthorizedUser_shouldReturnOk() throws Exception {
         // Arrange
@@ -116,6 +131,12 @@ public class UserControllerTest {
         verify(userService, times(1)).delete(1L);
     }
 
+    /**
+     * Tests the behavior of the delete operation on the UserController when attempting
+     * to delete a user by an ID that does not exist in the database.
+     *
+     * @throws Exception if an error occurs during the test execution
+     */
     @Test
     void deleteUser_withUnknownId_shouldReturnNotFound() throws Exception {
         // Arrange
@@ -126,6 +147,12 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Tests the behavior of the UserController when attempting to delete a user
+     * with an unauthorized user.
+     *
+     * @throws Exception if an error occurs during the test execution
+     */
     @Test
     void deleteUser_withUnauthorizedUser_shouldReturnUnauthorized() throws Exception {
         // Arrange
